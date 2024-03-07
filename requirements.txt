@@ -9,7 +9,7 @@ certifi==2023.5.7
 cffi==1.15.1
 charset-normalizer==3.2.0
 constantly==15.1.0
-cryptography==41.0.2
+cryptography==42.0.0
 cssselect==1.2.0
 et-xmlfile==1.1.0
 filelock==3.12.2
@@ -40,7 +40,7 @@ pyasn1==0.5.0
 pyasn1-modules==0.3.0
 pycparser==2.21
 PyDispatcher==2.0.7
-pyOpenSSL==23.2.0
+pyOpenSSL==24
 pytest==7.4.0
 python-dateutil==2.8.2
 python-dotenv==1.0.0
@@ -50,7 +50,6 @@ queuelib==1.6.2
 regex==2023.6.3
 requests==2.31.0
 requests-file==1.5.1
-ruff==0.0.280
 Scrapy==2.9.0
 service-identity==23.1.0
 six==1.16.0
