@@ -1,6 +1,6 @@
 beautifulsoup4==4.12.2
 bs4==0.0.1
-louis-db @ git+https://github.com/ai-cfia/louis-db@33c3161f859df28a496efb3f22c21a0a0a93919c
+ailab-db @ git+https://github.com/ai-cfia/ailab-db@main
 lxml==4.9.3
 numpy==1.25.1
 openai==0.27.8

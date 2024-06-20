@@ -3,23 +3,10 @@
 
 import scrapy
 
-from louis.crawler.items import EmbeddingItem
-from louis.models.openai import fetch_embedding
+import ailab.db as db
+import ailab.db.crawler as crawler
 
-import louis.db as db
-
-
-def convert_to_embedding_items(response):
-    chunk_token = response.json()
-    embedding = fetch_embedding(chunk_token['tokens'])
-    yield EmbeddingItem(
-        {
-            "token_id": chunk_token['token_id'],
-            "embedding": embedding,
-            "embedding_model": 'text-embedding-ada-002'
-        }
-    )
-
+from louis.crawler.convert import convert_chunk_token_to_embedding_items
 
 class KurtSpider(scrapy.Spider):
     """Spider that fetches chunk tokens from the Kurt API and
@@ -47,11 +34,11 @@ class KurtSpider(scrapy.Spider):
 
     def start_requests(self):
         with db.cursor(self.connection) as cursor:
-            chunk_ids = db.fetch_chunk_id_without_embedding(cursor)
+            chunk_ids = crawler.fetch_chunk_id_without_embedding(cursor)
         for chunk_id in chunk_ids:
             url = db.create_postgresql_url(self.dbname, 'chunk', chunk_id, {
                                            'encoding': 'cl100k_base'})
             yield scrapy.Request(url=url, callback=self.parse)
 
     def parse(self, response):
-        yield from convert_to_embedding_items(response)
+        yield from convert_chunk_token_to_embedding_items(response.json())

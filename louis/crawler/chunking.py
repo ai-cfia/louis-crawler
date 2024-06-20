@@ -78,7 +78,8 @@ def estimate_best_bucket_size(total, min_tokens, max_tokens):
 
 def split_chunk_into_subchunks(large_chunk, min_tokens=256, max_tokens=512):
     """some leafs might be bigger than desired. split text into smaller chunks"""
-    assert large_chunk['token_count'] > max_tokens
+    assert large_chunk['token_count'] > max_tokens, (
+        "chunk must be bigger than max_tokens")
     text_content = large_chunk['text_content']
     sentences = text_content.split('.')
 
@@ -93,6 +94,10 @@ def split_chunk_into_subchunks(large_chunk, min_tokens=256, max_tokens=512):
             'title': large_chunk.get('title', '')
         })
 
+    # it's possible it is just one long list of sentences without .
+    if len(sentence_chunks) == 1:
+        return sentence_chunks
+
     # TODO: smarter sentence bin packing
     # total_count = sum(c['token_count'] for c in sentence_chunks)
     # target_bucket_size = estimate_best_bucket_size(total_count, min_tokens, max_tokens)  # noqa: E501
@@ -102,7 +107,10 @@ def split_chunk_into_subchunks(large_chunk, min_tokens=256, max_tokens=512):
     bucket = buckets[0]
     bucket_size = 0
     for sentence_chunk in sentence_chunks:
-        if bucket_size + sentence_chunk['token_count'] >= target_bucket_size:
+        # need to be careful, maybe this sentence_chunk is already over the limit but
+        # there's also nothing in the bucket yet
+        predicted_bucket_size = bucket_size + sentence_chunk['token_count']
+        if bucket_size > 0 and predicted_bucket_size >= target_bucket_size:
             # we're over the limit, we start a new bucket
             bucket = []
             buckets.append(bucket)
@@ -113,12 +121,15 @@ def split_chunk_into_subchunks(large_chunk, min_tokens=256, max_tokens=512):
 
     smaller_chunks = []
     for bucket in buckets:
+        assert len(bucket) > 0, (
+            "bucket must not be empty: {} for large_chunk {}"
+            .format(bucket, large_chunk))
         small_chunk = combine_chunks_into_single_chunk(bucket)
         smaller_chunks.append(small_chunk)
     return smaller_chunks
 
 def collect_chunks_from_block(block, total_token_count, chunks):
-    """Collect chunks of text, starting from a block, 
+    """Collect chunks of text, starting from a block,
        until the total token count is at most 512"""
     if 'processed' not in block.attrs:
         chunk = compute_tokens(block)
@@ -165,10 +176,10 @@ def group_heading_by_block(soup):
 
     parent_div = None
 
-    # we unwrap additional tags around headers where the header 
+    # we unwrap additional tags around headers where the header
     # is alone in the wrapping tag
     for block in list(soup.find_all(HEADERS_RE)):
-        if (not HEADERS_RE.match(block.parent.name) 
+        if (not HEADERS_RE.match(block.parent.name)
             and len(block.find_next_siblings()) == 0):
             # example of this is a <summary><h1>...</h1></summary>
             block.parent.unwrap()
@@ -197,7 +208,7 @@ def group_heading_by_block(soup):
 
 def combine_chunks_into_single_chunk(chunks):
     """Combine list of chunks into a single chunk"""
-    assert len(chunks) > 0
+    assert len(chunks) > 0, "list of chunks must not be empty"
 
     # we return when there's only a single chunk left
     if len(chunks) == 1:
@@ -252,8 +263,8 @@ def segment_blocks_into_chunks(blocks):
 def chunk_html(html_content):
     """Chunk an HTML document into a list of chunks.
 
-     chunks are made up of a title, and a body 
-     
+     chunks are made up of a title, and a body
+
      the body is a list of subheadings and paragraphs
 
     each chunk should have between 256 and 512 tokens (ada tokens)

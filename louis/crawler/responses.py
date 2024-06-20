@@ -43,13 +43,13 @@ def response_from_crawl(row, url):
     returns: A scrapy HTTP response which can be used for unittesting.
     """
     request = Request(url=url)
-    if not row['html_content']:
+    if 'html_content' not in row:
         return Response(url=url, status=404, request=request)
 
     response = HtmlResponse(url=url,
         request=request,
         body=row['html_content'],
-        encoding='utf-8')
+        encoding='utf_8')
     return response
 
 def response_from_chunk_token(row, url):
@@ -67,6 +67,7 @@ def response_from_chunk_token(row, url):
     response = TextResponse(
         url=url,
         request=request,
-        body=json.dumps(row),
+        # we use default=str to serialize UUID
+        body=json.dumps(row, default=str),
         encoding='utf-8')
     return response

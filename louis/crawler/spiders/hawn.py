@@ -1,23 +1,7 @@
 import scrapy
 
-from louis.crawler.items import ChunkItem
 from louis.crawler.requests import extract_urls
-from louis.crawler.chunking import chunk_html
-
-
-def convert_to_chunk_items(response):
-    soup, chunks = chunk_html(response.body)
-    for chunk in chunks:
-        yield ChunkItem(
-            {
-                "url": response.url,
-                "title": chunk['title'],
-                "text_content": chunk['text_content'],
-                "token_count": chunk['token_count'],
-                "tokens": chunk['tokens'],
-            }
-        )
-
+from louis.crawler.convert import convert_html_content_to_chunk_items
 
 class HawnSpider(scrapy.Spider):
     name = "hawn"
@@ -25,5 +9,5 @@ class HawnSpider(scrapy.Spider):
     start_urls = ["https://inspection.canada.ca/splash"]
 
     def parse(self, response):
-        yield from convert_to_chunk_items(response)
+        yield from convert_html_content_to_chunk_items(response.url, response.body)
         yield from extract_urls(response, self.parse)
